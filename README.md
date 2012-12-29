@@ -12,11 +12,13 @@ This is optional, but script will not be able to login if manslmt will ask to fi
 * [deathbycaptcha](http://www.deathbycaptcha.com/)
 
 ### Example:
+
+#### Initialize:
     from sms import PyMansLMT
     instance = PyMansLMT("PHONE", "PASSWORD", 'DBC_USERNAME', 'DBC_PASSWORD')
 
-Validate phone numbers:
+#### Validate phone numbers:
     result = instance.send_sms(['PHONE1','PHONE2','PHONE3'], 'Test message', True)
 
-Send SMS to validated SMS numbers:
+#### Send SMS to validated SMS numbers:
     sent = instance.send_sms(result[0], 'Test message')
