@@ -17,7 +17,7 @@ class SessionWHeaders(requests.Session):
 
 
 class PyMansLMT:
-    def __init__(self, username, password, dusername, dpassword):
+    def __init__(self, username, password, dusername=None, dpassword=None):
         self.username = username
         self.password = password
 
