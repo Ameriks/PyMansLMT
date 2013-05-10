@@ -32,14 +32,14 @@ class PyMansLMT:
         self.session = SessionWHeaders()
 
         # Get cookies
-        html = self.session.get('https://manslmt.lv/lv/')
+        html = self.session.get('https://mans.lmt.lv/lv/', verify=False)
         soup = BeautifulSoup(html.text)
 
         # We need to get captcha image as LMT stores something on their side. If image is not retrieved, then cannot loggin.
         captchaURL = soup.find("span", {"class": "capcha"}).find("img").get("src")
-        captchaIMG = self.session.get('https://manslmt.lv%s' % (captchaURL))
+        captchaIMG = self.session.get('https://mans.lmt.lv%s' % (captchaURL))
         # Check if we need to decode captcha
-        xml_without_captcha = self.session.post('https://manslmt.lv/lv/xml/login_auth.php?%d' % (current_timestamp), data={'check_auth_code': '1', 'msisdn': self.username})
+        xml_without_captcha = self.session.post('https://mans.lmt.lv/lv/xml/login_auth.php?%d' % (current_timestamp), data={'check_auth_code': '1', 'msisdn': self.username}, verify=False)
         need_captcha = xml_without_captcha.content == 'false'
 
         post_params = {'where_login_form': 'manslmt', 'username': self.username, 'password': self.password, 'code': '', 'submit': 'login'}
@@ -52,19 +52,19 @@ class PyMansLMT:
             captcha = self.dbc.decode(captchaFile)
             post_params['code'] = captcha["text"]
 
-        html = self.session.post('https://manslmt.lv/lv/index.php', data=post_params)
+        html = self.session.post('https://mans.lmt.lv/lv/index.php', data=post_params, verify=False)
         soup = BeautifulSoup(html.text)
 
         if not soup.find("div", {"class": "lmterr"}):
             time.sleep(3)  # Need to sleep 3 secs as LMT website script have such sleep as well. They are gathering some data.
-            html = self.session.get('https://manslmt.lv/lv/icenter/info.php')
+            html = self.session.get('https://mans.lmt.lv/lv/icenter/info.php', verify=False)
             soup = BeautifulSoup(html.text)
             if soup.find("h1") and (soup.find("h1").text == u'Nor\xc4\x93\xc4\xb7inu inform\xc4\x81cija' or soup.find("h1").text == u'Inform\xc4\x81cijas sagatavo\xc5\xa1ana'):
                 return True
             else:
-                raise Exception("Error logging in manslmt.lv")
+                raise Exception("Error logging in mans.lmt.lv")
         elif soup.find("div", {"class": "lmterr"}).text == u'Nesekm\xc4\xabga autoriz\xc4\x81cija':  # u'Nesekmīga autorizācija':
-            raise Exception("Incorrect manslmt username or password")
+            raise Exception("Incorrect mans.lmt username or password")
         elif soup.find("div", {"class": "lmterr"}).text == u'Nepareizs kods.' and need_captcha:
             print "Incorrect captcha"
             self.dbc.report(captcha['captcha'])  # Report incorrect captcha
@@ -80,7 +80,7 @@ class PyMansLMT:
         if len(message) == 0 or len(message) > 160:
             raise Exception("Message too long or not set")
 
-        html = self.session.get('https://manslmt.lv/lv/sms_group/index.php')
+        html = self.session.get('https://mans.lmt.lv/lv/sms_group/index.php', verify=False)
         soup = BeautifulSoup(html.text)
         hidden_fields = soup.find("form", {"id": "sms-groups-send"}).findAll("input", {"type": "hidden"})
         post_params = {}
@@ -95,13 +95,13 @@ class PyMansLMT:
 
         post = urllib.urlencode(post_params, doseq=True)
 
-        req = requests.Request('POST', 'https://manslmt.lv/lv/sms_group/index.php', data=post_params, cookies=self.session.cookies)
+        req = requests.Request('POST', 'https://mans.lmt.lv/lv/sms_group/index.php', data=post_params, cookies=self.session.cookies)
         req_prepared = req.prepare()
         req_prepared.body = post
-        html = self.session.send(req_prepared)
+        html = self.session.send(req_prepared, verify=False)
 
         if html.status_code == 302:
-            html = self.session.get('https://manslmt.lv/lv/sms_group/index.php')
+            html = self.session.get('https://mans.lmt.lv/lv/sms_group/index.php', verify=False)
 
         soup = BeautifulSoup(html.text)
 
