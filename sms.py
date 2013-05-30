@@ -12,8 +12,8 @@ class SessionWHeaders(requests.Session):
     def __init__(self):
         super(SessionWHeaders, self).__init__()
         self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11',
-            'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, compress'}
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Encoding': 'gzip,deflate,sdch'}
 
 
 class PyMansLMT:
@@ -90,19 +90,12 @@ class PyMansLMT:
         post_params['sms-number[]'] = numbers
         if validate:
             post_params['sms-group-preview'] = 'Pārbaudīt'
+            post_params['preview'] = "1"
         else:
             post_params['sms-group-send'] = 'Nosūtīt'
+            post_params['preview'] = "0"
 
-        post = urllib.urlencode(post_params, doseq=True)
-
-        req = requests.Request('POST', 'https://mans.lmt.lv/lv/sms_group/index.php', data=post_params, cookies=self.session.cookies)
-        req_prepared = req.prepare()
-        req_prepared.body = post
-        html = self.session.send(req_prepared, verify=False)
-
-        if html.status_code == 302:
-            html = self.session.get('https://mans.lmt.lv/lv/sms_group/index.php', verify=False)
-
+        html = self.session.post('https://mans.lmt.lv/lv/sms_group/index.php', data=post_params, verify=False)
         soup = BeautifulSoup(html.text)
 
         incorrect = []
