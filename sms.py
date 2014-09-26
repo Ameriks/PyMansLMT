@@ -59,7 +59,7 @@ class PyMansLMT:
             time.sleep(3)  # Need to sleep 3 secs as LMT website script have such sleep as well. They are gathering some data.
             html = self.session.get('https://mans.lmt.lv/lv/icenter/info.php', verify=False)
             soup = BeautifulSoup(html.text)
-            if soup.find("h1") and (soup.find("h1").text == u'Nor\xc4\x93\xc4\xb7inu inform\xc4\x81cija' or soup.find("h1").text == u'Inform\xc4\x81cijas sagatavo\xc5\xa1ana'):
+            if soup.find("h1") and (soup.find("h1").text == u'Nor\u0113\u0137inu inform\u0101cija' or soup.find("h1").text == u'Inform\xc4\x81cijas sagatavo\xc5\xa1ana'):
                 return True
             else:
                 raise Exception("Error logging in mans.lmt.lv")
