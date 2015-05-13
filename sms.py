@@ -4,24 +4,26 @@ from bs4 import BeautifulSoup
 import requests
 import time
 import urllib
-import deathbycaptcha
 import StringIO
 
 
 class SessionWHeaders(requests.Session):
+    headers2 = {}
     def __init__(self):
         super(SessionWHeaders, self).__init__()
         self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Encoding': 'gzip,deflate,sdch'}
+        self.headers2 = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Accept-Encoding': 'gzip, deflate',
+            'X-Requested-With': 'XMLHttpRequest'}
 
 
 class PyMansLMT:
-    def __init__(self, username, password, dusername=None, dpassword=None):
+    def __init__(self, username, password):
         self.username = username
         self.password = password
-
-        self.dbc = deathbycaptcha.SocketClient(dusername, dpassword)
 
         self.login_count = 0
         self.login()
@@ -32,29 +34,41 @@ class PyMansLMT:
         self.session = SessionWHeaders()
 
         # Get cookies
-        html = self.session.get('https://mans.lmt.lv/lv/', verify=False)
+        html = self.session.get('https://mans.lmt.lv/lv/auth', verify=False)
         soup = BeautifulSoup(html.text)
-
+        lmt_csrf_name = soup.find('input', {"name": "lmt_csrf_name"}).get("value")
         # We need to get captcha image as LMT stores something on their side. If image is not retrieved, then cannot loggin.
-        captchaURL = soup.find("span", {"class": "capcha"}).find("img").get("src")
-        captchaIMG = self.session.get('https://mans.lmt.lv%s' % (captchaURL))
+        #captchaURL = soup.find("span", {"class": "capcha"}).find("img").get("src")
+        #captchaIMG = self.session.get('https://mans.lmt.lv%s' % (captchaURL))
         # Check if we need to decode captcha
-        xml_without_captcha = self.session.post('https://mans.lmt.lv/lv/xml/login_auth.php?%d' % (current_timestamp), data={'check_auth_code': '1', 'msisdn': self.username}, verify=False)
-        need_captcha = xml_without_captcha.content == 'false'
+        self.session.headers2.update({"lmt_csrf_name": lmt_csrf_name})
+        # self.session.headers2.update({"lmt_csrf_name": lmt_csrf_name})
+        xml_without_captcha = self.session.post('https://mans.lmt.lv/lv/auth/check-auth-code', data={'lmt_csrf_name': lmt_csrf_name, 'login-number': self.username}, verify=False, headers=self.session.headers2)
+        #need_captcha = False  # TODO: Fix this
 
-        post_params = {'where_login_form': 'manslmt', 'username': self.username, 'password': self.password, 'code': '', 'submit': 'login'}
-        if need_captcha:
-            print "DECODING CAPTCHA"
-            self.dbc.get_balance()
-            captchaFile = StringIO.StringIO()
-            captchaFile.write(captchaIMG.content)
-            captchaFile.seek(0)
-            captcha = self.dbc.decode(captchaFile)
-            post_params['code'] = captcha["text"]
+        post_params = {'lmt_csrf_name': lmt_csrf_name, 'login-name': self.username, 'login-pass': self.password, 'login-code': ''}
+        #if need_captcha:
+        #    print "DECODING CAPTCHA"
+        #    self.dbc.get_balance()
+        #    captchaFile = StringIO.StringIO()
+        #    captchaFile.write(captchaIMG.content)
+        #    captchaFile.seek(0)
+        #    captcha = self.dbc.decode(captchaFile)
+        #    post_params['code'] = captcha["text"]
 
-        html = self.session.post('https://mans.lmt.lv/lv/index.php', data=post_params, verify=False)
+        html = self.session.post('https://mans.lmt.lv/lv/auth/login', data=post_params, verify=False, headers=self.session.headers2)
         soup = BeautifulSoup(html.text)
 
+        if html.json().get('success'):
+            html = self.session.post('https://mans.lmt.lv%s?_=%i' % (html.json().get('step'), current_timestamp) , data=post_params, verify=False, headers=self.session.headers2)
+            if html.json().get('success'):
+                html = self.session.post('https://mans.lmt.lv%s?_=%i' % (html.json().get('step'), current_timestamp) , data=post_params, verify=False, headers=self.session.headers2)
+                if html.json().get('redirect'):
+                    html = self.session.get('https://mans.lmt.lv%s' % html.json().get('redirect'), verify=False)
+                    return True
+
+        raise Exception("Failed to login")
+        # TODO: Rebuild this all.
         if not soup.find("div", {"class": "lmterr"}):
             time.sleep(3)  # Need to sleep 3 secs as LMT website script have such sleep as well. They are gathering some data.
             html = self.session.get('https://mans.lmt.lv/lv/icenter/info.php', verify=False)
