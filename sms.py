@@ -6,7 +6,7 @@ import time
 import urllib
 import StringIO
 import logging
-logger = logging.getLogger('pymanslmtsender')
+logging.basicConfig(filename='logs.log',level=logging.DEBUG)
 
 class SessionWHeaders(requests.Session):
     headers2 = {}
@@ -68,13 +68,13 @@ class PyMansLMT:
                     html = self.session.get('https://mans.lmt.lv%s' % html.json().get('redirect'), verify=False)
                     return True
                 else:
-                    logger.error('Failed to do something: ' + unicode(html.content))
+                    logging.error('Failed to do something: ' + unicode(html.content))
                     raise Exception("Failed to login 1")
             else:
-                logger.error('Failed to do something: ' + unicode(html.content))
+                logging.error('Failed to do something: ' + unicode(html.content))
                 raise Exception("Failed to login 2")
         else:
-            logger.error('Failed to do something: ' + unicode(html.content))
+            logging.error('Failed to do something: ' + unicode(html.content))
             raise Exception("Failed to login 3")
         raise Exception("Failed to login")
         # TODO: Rebuild this all.
