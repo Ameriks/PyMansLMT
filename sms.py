@@ -61,10 +61,15 @@ class PyMansLMT:
         soup = BeautifulSoup(html.text)
 
         if html.json().get('success'):
+            time.sleep(2)
             html = self.session.post('https://mans.lmt.lv%s?_=%i' % (html.json().get('step'), current_timestamp) , data=post_params, verify=False, headers=self.session.headers2)
             if html.json().get('wait'):
+                while html.json().get('wait'):
+                    time.sleep(2)
+                    html = self.session.post('https://mans.lmt.lv%s?_=%i' % (html.json().get('step'), current_timestamp) , data=post_params, verify=False, headers=self.session.headers2)
+
+            if html.json().get('success'):
                 time.sleep(2)
-            if html.json().get('success') or html.json().get('wait'):
                 html = self.session.post('https://mans.lmt.lv%s?_=%i' % (html.json().get('step'), current_timestamp) , data=post_params, verify=False, headers=self.session.headers2)
                 if html.json().get('redirect'):
                     html = self.session.get('https://mans.lmt.lv%s' % html.json().get('redirect'), verify=False)
