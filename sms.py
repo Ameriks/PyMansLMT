@@ -5,7 +5,8 @@ import requests
 import time
 import urllib
 import StringIO
-
+import logging
+logger = logging.getLogger('pymanslmtsender')
 
 class SessionWHeaders(requests.Session):
     headers2 = {}
@@ -66,7 +67,15 @@ class PyMansLMT:
                 if html.json().get('redirect'):
                     html = self.session.get('https://mans.lmt.lv%s' % html.json().get('redirect'), verify=False)
                     return True
-
+                else:
+                    logger.error('Failed to do something: ' + unicode(html.content))
+                    raise Exception("Failed to login 1")
+            else:
+                logger.error('Failed to do something: ' + unicode(html.content))
+                raise Exception("Failed to login 2")
+        else:
+            logger.error('Failed to do something: ' + unicode(html.content))
+            raise Exception("Failed to login 3")
         raise Exception("Failed to login")
         # TODO: Rebuild this all.
         if not soup.find("div", {"class": "lmterr"}):
